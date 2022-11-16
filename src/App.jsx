@@ -10,21 +10,35 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [photos, setPhotos] = useState([]);
   const [pages, setPages] = useState(1);
+  const [query, setQuery] = useState('');
   console.log(pages);
 
   const fetchImages = async () => {
     setLoading(true);
     let url;
     const urlPage = `&page=${pages}`;
-    url = `${mainURL}${clientID}${urlPage}`;
+    const urlQuery = `&query=${query}`;
+
+    if (query) {
+      url = `${searchURL}${clientID}${urlPage}${urlQuery}`;
+    } else {
+      url = `${mainURL}${clientID}${urlPage}`;
+    }
+
     // url = `${mainURL}${clientID}&page=3`;
     try {
       const response = await fetch(url);
       const data = await response.json();
-      // console.log(data);
+      console.log(data);
       // setPhotos(data);
       setPhotos(oldPhotos => {
-        return [...oldPhotos, ...data];
+        if (query && pages === 1) {
+          return data.results;
+        } else if (query) {
+          return [...oldPhotos, ...data.results];
+        } else {
+          return [...oldPhotos, ...data];
+        }
       });
       setLoading(false);
     } catch (err) {
@@ -35,6 +49,8 @@ function App() {
 
   useEffect(() => {
     fetchImages();
+
+    // eslint-disable-line-text
   }, [pages]);
 
   useEffect(() => {
@@ -47,7 +63,9 @@ function App() {
         !loading &&
         window.innerHeight + window.scrollY >= document.body.scrollHeight - 2
       ) {
-        setPages(pages=>  pages + 1);
+        setPages(pages => {
+          return pages + 1;
+        });
       }
     });
     return () => window.removeEventListener('scroll', event);
@@ -55,7 +73,9 @@ function App() {
 
   const handleSubmit = e => {
     e.preventDefault();
-    console.log('hello');
+    fetchImages();
+
+    setPages(1);
   };
 
   return (
@@ -63,7 +83,13 @@ function App() {
       <main>
         <section className="search">
           <form action="" className="search-form">
-            <input type="text" placeholder="search" className="form-input" />
+            <input
+              type="text"
+              placeholder="search"
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              className="form-input"
+            />
             <button
               type="submit"
               className="submit-btn"
